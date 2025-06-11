@@ -186,7 +186,7 @@ ssh-keygen -lf <(echo "粘贴公钥内容")
 ```
 ```
 ssh-keygen -lf <(cat ~/.ssh/ssh-test.pub)
-``
+```
 
 VM上的hostkey在`/etc/ssh`目录下。
 
