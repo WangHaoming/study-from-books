@@ -158,23 +158,13 @@ gcloud compute instances add-metadata INSTANCE_NAME \
 
 
 ### 在VM上获取metadata上面的ssh key信息
-有些情况下登录会有一些异常，比如给VM更换了boot disk，vm本身并没有删除重建，但是新的boot disk中的`/etc/ssh`路径下的一定和原来的不一样，这种情况下，metadata上的hostkey数据不会被更新，不知道为什么（可能是一个bug？）。这时会导致新的cloud shell在尝试登录的时候提示hostkey验证失败。
+有些情况下登录会有一些异常，比如给VM更换了boot disk，vm本身并没有删除重建，但是新的boot disk中的`/etc/ssh`路径下key的一定和原来的不一样。这种情况下，metadata上的hostkey数据不会被更新，不知道为什么（可能是一个bug？）。这时会导致新的cloud shell在尝试登录的时候提示hostkey验证失败。
 
+登录VM，在VM上运行下面命令，检查当前hostkey
 ```
 curl -H "Metadata-Flavor: Google"      "http://metadata.google.internal/computeMetadata/v1/instance/guest-attributes/hostkeys/ssh-ed25519?recursive"
 
 ```
-
-手动更新hostkey
-
-https://cloud.google.com/compute/docs/metadata/manage-guest-attributes#set_guest_attributes
-
-```
-curl -X PUT --data "AAAAC3NzaC1lZDI1NTE5AAAAIOXi38cYbYDsgl1vKRPMMGwtVDjIZ1lQgJLJPwtiTo+/" http://metadata.google.internal/computeMetadata/v1/instance/guest-attributes/hostkeys/ssh-ed25519 -H "Metadata-Flavor: Google"
-```
-
-更新完metadata的公钥成功登陆VM
-
 
 VM上的hostkey在`/etc/ssh`目录下。
 
@@ -187,7 +177,19 @@ ssh-keygen -lf <(echo "粘贴公钥内容")
 ssh-keygen -lf <(cat /etc/ssh_host_ed25519_key.pub)
 ```
 
-然后将指纹跟新到matadata server对应的项目上。
+对比hostkey是否和metaserver上的不同。
+
+然后将指纹[更新到matadata server](https://cloud.google.com/compute/docs/metadata/manage-guest-attributes#set_guest_attributes
+)对应的项目上。执行下面命令
+
+```
+curl -X PUT --data "AAAAC3NzaC1lZDXXXXXXXXXXXKRPMMGwtVDjIZ1lQgJLJPwtiTo+/" http://metadata.google.internal/computeMetadata/v1/instance/guest-attributes/hostkeys/ssh-ed25519 -H "Metadata-Flavor: Google"
+```
+
+更新完metadata的公钥成功登陆VM
+
+
+
 
 
 还以一种非常简单的方式是直接不检查hostkey：
@@ -206,3 +208,4 @@ GCP支持多种SSH登录机制，以满足不同规模和安全需求。
 ---
 
 如需更详细的操作脚本或自动化方案，欢迎评论交流！
+
