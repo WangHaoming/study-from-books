@@ -158,8 +158,7 @@ gcloud compute instances add-metadata INSTANCE_NAME \
 
 
 ### 在VM上获取metadata上面的ssh key信息
-
-不知道为什么，无法在GCP的VM上更新metaserver上的hostkey，导致新的cloud shell在尝试登录的时候提示hostkey验证失败。
+有些情况下登录会有一些异常，比如给VM更换了boot disk，vm本身并没有删除重建，但是新的boot disk中的`/etc/ssh`路径下的一定和原来的不一样，这种情况下，metadata上的hostkey数据不会被更新，不知道为什么（可能是一个bug？）。这时会导致新的cloud shell在尝试登录的时候提示hostkey验证失败。
 
 ```
 curl -H "Metadata-Flavor: Google"      "http://metadata.google.internal/computeMetadata/v1/instance/guest-attributes/hostkeys/ssh-ed25519?recursive"
@@ -177,20 +176,21 @@ curl -X PUT --data "AAAAC3NzaC1lZDI1NTE5AAAAIOXi38cYbYDsgl1vKRPMMGwtVDjIZ1lQgJLJ
 更新完metadata的公钥成功登陆VM
 
 
+VM上的hostkey在`/etc/ssh`目录下。
 
-
-为公钥生成指纹
+需要为公钥生成指纹：
 
 ```
 ssh-keygen -lf <(echo "粘贴公钥内容")
 ```
 ```
-ssh-keygen -lf <(cat ~/.ssh/ssh-test.pub)
+ssh-keygen -lf <(cat /etc/ssh_host_ed25519_key.pub)
 ```
 
-VM上的hostkey在`/etc/ssh`目录下。
+然后将指纹跟新到matadata server对应的项目上。
 
 
+还以一种非常简单的方式是直接不检查hostkey：
 ```
 gcloud compute ssh --zone "us-central1-a" "curl-vm" --tunnel-through-iap --project "haoming-demo" --strict-host-key-checking=no
 ```
